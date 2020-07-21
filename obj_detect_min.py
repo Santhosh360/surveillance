@@ -3,6 +3,7 @@ import pathlib
 import cv2
 
 import numpy as np
+import six
 import six.moves.urllib as urllib
 import sys
 import tarfile
@@ -34,11 +35,8 @@ def load_model(model_name):
 PATH_TO_LABELS = 'mscoco_label_map.pbtxt'
 category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
 
-# If you want to test the code with your images, just add path to the images to the TEST_IMAGE_PATHS.
-PATH_TO_TEST_IMAGES_DIR = pathlib.Path('test_images')
-TEST_IMAGE_PATHS = sorted(list(PATH_TO_TEST_IMAGES_DIR.glob("*.jpg")))
-
-model_name = 'ssd_mobilenet_v1_coco_2017_11_17'
+#model_name = 'ssd_mobilenet_v1_coco_2017_11_17'
+model_name = 'faster_rcnn_resnet101_coco_2018_01_28'
 detection_model = load_model(model_name)
 
 def run_inference_for_single_image(model, image):
@@ -63,74 +61,60 @@ def run_inference_for_single_image(model, image):
 
   # detection_classes should be ints.
   output_dict['detection_classes'] = output_dict['detection_classes'].astype(np.int64)
-   
-  # Handle models with masks:
-  if 'detection_masks' in output_dict:
-    # Reframe the the bbox mask to the image size.
-    detection_masks_reframed = utils_ops.reframe_box_masks_to_image_masks(
-              output_dict['detection_masks'], output_dict['detection_boxes'],
-               image.shape[0], image.shape[1])      
-    detection_masks_reframed = tf.cast(detection_masks_reframed > 0.5,
-                                       tf.uint8)
-    output_dict['detection_masks_reframed'] = detection_masks_reframed.numpy()
-    
+ 
   return output_dict
-
-def show_inference(model, image_path):
-  # the array based representation of the image will be used later in order to prepare the
-  # result image with boxes and labels on it.
-  image_np = np.array(Image.open(image_path))
-  # Actual detection.
-  output_dict = run_inference_for_single_image(model, image_np)
-  # Visualization of the results of a detection.
-  vis_util.visualize_boxes_and_labels_on_image_array(
-      image_np,
-      output_dict['detection_boxes'],
-      output_dict['detection_classes'],
-      output_dict['detection_scores'],
-      category_index,
-      instance_masks=output_dict.get('detection_masks_reframed', None),
-      use_normalized_coordinates=True,
-      line_thickness=8)
-  
-  image_np = cv2.cvtColor(image_np, cv2.COLOR_BGR2RGB)
-  cv2.imshow('image',image_np)
-  cv2.waitKey(0)
-
-  #closing all open windows
-  cv2.destroyAllWindows()
 
 def show_inference_video(model,video_path):
   # define a video capture object 
   vid = cv2.VideoCapture(video_path) 
-  
+  if (vid.isOpened()== False):
+    print("Error opening video stream or file")
+    exit(0)
+  frame_no = 0
+  fps = vid.get(cv2.CAP_PROP_FPS)
   while(True):
 
     # Capture the video frame 
     # by frame 
+    vid.set(cv2.CAP_PROP_POS_FRAMES, frame_no)
     ret, frame = vid.read() 
+    if isinstance(frame, type(None)):
+      exit(0)
+    frame_no = frame_no + fps
+    h, w, c = frame.shape
     #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
     # Actual detection.
+    #frame = cv2.resize(frame, (int(w/2),int(h/2)))
     output_dict = run_inference_for_single_image(model, frame)
+    
+    for i in range(0,len(output_dict['detection_classes'])):
+      if output_dict['detection_classes'][i] != 1:
+        output_dict['detection_scores'][i] = 0.0
+    #print(output_dict['detection_boxes'])
+    #print(output_dict['detection_classes'])
+    #print(output_dict['detection_scores'])
+    
     # Visualization of the results of a detection.
     vis_util.visualize_boxes_and_labels_on_image_array(
-        image_np,
+        frame,
         output_dict['detection_boxes'],
         output_dict['detection_classes'],
         output_dict['detection_scores'],
         category_index,
-        instance_masks=output_dict.get('detection_masks_reframed', None),
+        #instance_masks=output_dict.get('detection_masks_reframed', None),
         use_normalized_coordinates=True,
-        line_thickness=8)
-
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    # Display the resulting frame 
-    cv2.imshow('frame', frame) 
+        line_thickness=8,
+        min_score_thresh=0.4)
+    #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    # Display the resulting frame
+    if h > 700:
+      frame = cv2.resize(frame, (int(w/2),int(h/2)))
+    cv2.imshow('frame', frame)
       
     # the 'q' button is set as the 
     # quitting button you may use any 
     # desired button of your choice 
-    if cv2.waitKey(1) & 0xFF == ord('q'): 
+    if cv2.waitKey(1000) & 0xFF == ord('q'): 
       break
   
   # After the loop release the cap object 
@@ -138,6 +122,4 @@ def show_inference_video(model,video_path):
   # Destroy all the windows 
   cv2.destroyAllWindows() 
 
-#for image_path in TEST_IMAGE_PATHS:
-  #show_inference(detection_model, image_path)
-show_inference_video(detection_model, 0)
+show_inference_video(detection_model, 'chainSnatching.mkv')

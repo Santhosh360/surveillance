@@ -76,8 +76,18 @@ def is_person_detected(model,start_frame,vid,fps):
     return True
   return False
 
-#def store_video(from_frame,to_frame,)
-
+def store_video(from_frame,to_frame,vid,out):
+  prev_frameIndex = vid.get(1)
+  vid.set(1,from_frame)
+  for i in range(from_frame,to_frame):
+    ret, frame = vid.read()
+    if isinstance(frame, type(None)):
+      vid.release()
+      out.release()
+      exit(0)
+    out.write(frame)
+  vid.set(1,prev_frameIndex)
+    
 def show_inference_video(model,video_path):
   # define a video capture object 
   vid = cv2.VideoCapture(video_path) 
@@ -144,7 +154,12 @@ vid = cv2.VideoCapture(video_path)
 if (vid.isOpened()== False):
   print("Error opening video stream or file")
   exit(0)
+dest_video_path = video_path[:-4]+'_res.avi'
+print(dest_video_path)
+frame_width = int(vid.get(3))
+frame_height = int(vid.get(4))
 fps = int(vid.get(cv2.CAP_PROP_FPS))
+out = cv2.VideoWriter(dest_video_path, cv2.VideoWriter_fourcc('M','J','P','G'), fps, (frame_width,frame_height))
 while True:
   print("========================================================")
   res = is_person_detected(detection_model, frme, vid, fps)
@@ -153,5 +168,6 @@ while True:
     print("ff 1sec")
     continue
   print("Person detected:",res)
+  store_video(frme, frme + (fps*5), vid, out)
   frme = frme + (fps*5)
   print("ff 5secs")

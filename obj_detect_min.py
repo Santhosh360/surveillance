@@ -88,66 +88,6 @@ def store_video(from_frame,to_frame,vid,out):
     out.write(frame)
   vid.set(1,prev_frameIndex)
     
-def show_inference_video(model,video_path):
-  # define a video capture object 
-  vid = cv2.VideoCapture(video_path) 
-  if (vid.isOpened()== False):
-    print("Error opening video stream or file")
-    exit(0)
-  frame_no = 0
-  fps = vid.get(cv2.CAP_PROP_FPS)
-  while(True):
-
-    # Capture the video frame 
-    # by frame 
-    vid.set(cv2.CAP_PROP_POS_FRAMES, frame_no)
-    ret, frame = vid.read() 
-    if isinstance(frame, type(None)):
-      exit(0)
-    frame_no = frame_no + fps
-    h, w, c = frame.shape
-    #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-    # Actual detection.
-    #frame = cv2.resize(frame, (int(w/2),int(h/2)))
-    output_dict = run_inference_for_single_image(model, frame)
-    
-    for i in range(0,len(output_dict['detection_classes'])):
-      if output_dict['detection_classes'][i] != 1:
-        output_dict['detection_scores'][i] = 0.0
-    #print(output_dict['detection_boxes'])
-    #print(output_dict['detection_classes'])
-    #print(output_dict['detection_scores'])
-    
-    # Visualization of the results of a detection.
-    vis_util.visualize_boxes_and_labels_on_image_array(
-        frame,
-        output_dict['detection_boxes'],
-        output_dict['detection_classes'],
-        output_dict['detection_scores'],
-        category_index,
-        #instance_masks=output_dict.get('detection_masks_reframed', None),
-        use_normalized_coordinates=True,
-        line_thickness=8,
-        min_score_thresh=0.4)
-    #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    # Display the resulting frame
-    if h > 700:
-      frame = cv2.resize(frame, (int(w/2),int(h/2)))
-    cv2.imshow('frame', frame)
-      
-    # the 'q' button is set as the 
-    # quitting button you may use any 
-    # desired button of your choice 
-    if cv2.waitKey(1000) & 0xFF == ord('q'): 
-      break
-  
-  # After the loop release the cap object 
-  vid.release() 
-  # Destroy all the windows 
-  cv2.destroyAllWindows() 
-
-#show_inference_video(detection_model, 'chainSnatching.mp4')
-
 frme = 0
 video_path = input("Enter video path:")
 vid = cv2.VideoCapture(video_path)

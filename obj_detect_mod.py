@@ -26,8 +26,8 @@ def load_model(model_name):
 PATH_TO_LABELS = 'mscoco_label_map.pbtxt'
 category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
 
-model_name = 'ssd_mobilenet_v1_coco_2017_11_17'
-#model_name = 'ssd_resnet50_v1_fpn_shared_box_predictor_640x640_coco14_sync_2018_07_03'
+#model_name = 'ssd_mobilenet_v1_coco_2017_11_17'
+model_name = 'ssd_resnet50_v1_fpn_shared_box_predictor_640x640_coco14_sync_2018_07_03'
 detection_model = load_model(model_name)
 
 def run_inference_for_single_image(model, image):
@@ -58,7 +58,7 @@ def run_inference_for_single_image(model, image):
 def is_person_detected(model,start_frame,vid,out,fps):
   person_in_frame = 0
   fixed_frame = start_frame+fps
-  while ( start_frame <= fixed_frame ):
+  while ( start_frame < fixed_frame ):
     vid.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
     ret, frame = vid.read()
     if ret == False:
@@ -68,25 +68,26 @@ def is_person_detected(model,start_frame,vid,out,fps):
     output_dict = run_inference_for_single_image(model, frame)
     print('<<<-------------------FRAME_START------------------->>>')
     print('FRAME_NUMBER:',vid.get(1))
+    # Visualization of the results of a detection.
+    vis_util.visualize_boxes_and_labels_on_image_array(
+    frame,
+    output_dict['detection_boxes'],
+    output_dict['detection_classes'],
+    output_dict['detection_scores'],
+    category_index,
+    use_normalized_coordinates=True,
+    line_thickness=5,
+    min_score_thresh=0.35)
+    # Display the resulting frame
+    cv2.imshow('frame', frame)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+      out.release()
+      vid.release()
+      exit(0)
     for j in range(0,len(output_dict['detection_classes'])):
-      #print(output_dict['detection_classes'][j],output_dict['detection_scores'][j])
       if output_dict['detection_classes'][j] == 1 and output_dict['detection_scores'][j] > 0.35:
         print("Person detection score in frame",start_frame,':',output_dict['detection_scores'][j])
         person_in_frame = person_in_frame + 1
-        break
-      # Visualization of the results of a detection.
-      vis_util.visualize_boxes_and_labels_on_image_array(
-      frame,
-      output_dict['detection_boxes'],
-      output_dict['detection_classes'],
-      output_dict['detection_scores'],
-      category_index,
-      use_normalized_coordinates=True,
-      line_thickness=5,
-      min_score_thresh=0.35)
-      # Display the resulting frame
-      cv2.imshow('frame', frame)
-      if cv2.waitKey(1) & 0xFF == ord('q'):
         break
     print('<<<-------------------FRAME_END------------------->>>')
     if person_in_frame:

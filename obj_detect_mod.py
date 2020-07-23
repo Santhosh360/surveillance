@@ -27,7 +27,8 @@ PATH_TO_LABELS = 'mscoco_label_map.pbtxt'
 category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
 
 #model_name = 'ssd_mobilenet_v1_coco_2017_11_17'
-model_name = 'ssd_resnet50_v1_fpn_shared_box_predictor_640x640_coco14_sync_2018_07_03'
+#model_name = 'ssd_resnet50_v1_fpn_shared_box_predictor_640x640_coco14_sync_2018_07_03'
+model_name = 'faster_rcnn_resnet101_coco_2018_01_28'
 detection_model = load_model(model_name)
 
 def run_inference_for_single_image(model, image):
@@ -97,7 +98,7 @@ def is_person_detected(model,start_frame,vid,out,fps):
       print('<<<---------PERSON_DETECTION_END--------->>>')
       return True
     print('Person not detected...')
-    print('FRAME_END')
+    print('FRAME_END>>>>>>>>>>')
     start_frame+=5
   print('<<<---------PERSON_DETECTION_END--------->>>')
   return False
@@ -135,7 +136,7 @@ print(dest_video_path)
 frame_width = int(vid.get(3))
 frame_height = int(vid.get(4))
 fps = int(round(vid.get(cv2.CAP_PROP_FPS)))
-out = cv2.VideoWriter(dest_video_path, cv2.VideoWriter_fourcc('M','J','P','G'), fps, (frame_width,frame_height))
+out = cv2.VideoWriter(dest_video_path, cv2.VideoWriter_fourcc('m','p','4','v'), fps, (frame_width,frame_height))
 try:
   while True:
     person_detected_in_present = is_person_detected(detection_model, frme, vid, out, fps)

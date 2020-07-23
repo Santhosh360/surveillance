@@ -58,6 +58,7 @@ def run_inference_for_single_image(model, image):
 def is_person_detected(model,start_frame,vid,out,fps):
   person_in_frame = 0
   fixed_frame = start_frame+fps
+  print('<<<--------PERSON_DETECTION_START-------->>>')
   while ( start_frame < fixed_frame ):
     vid.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
     ret, frame = vid.read()
@@ -66,7 +67,7 @@ def is_person_detected(model,start_frame,vid,out,fps):
       vid.release()
       exit(0)
     output_dict = run_inference_for_single_image(model, frame)
-    print('<<<-------------------FRAME_START------------------->>>')
+    print('FRAME_START>>>>>>>>')
     print('FRAME_NUMBER:',vid.get(1))
     # Visualization of the results of a detection.
     vis_util.visualize_boxes_and_labels_on_image_array(
@@ -89,18 +90,31 @@ def is_person_detected(model,start_frame,vid,out,fps):
         print("Person detection score in frame",start_frame,':',output_dict['detection_scores'][j])
         person_in_frame = person_in_frame + 1
         break
-    print('<<<-------------------FRAME_END------------------->>>')
     if person_in_frame:
       print("person_in_frame count:",person_in_frame)
       print("Person detected!!!")
+      print('FRAME_END>>>>>>>>>>')
+      print('<<<---------PERSON_DETECTION_END--------->>>')
       return True
+    print('Person not detected...')
+    print('FRAME_END')
     start_frame+=5
+  print('<<<---------PERSON_DETECTION_END--------->>>')
   return False
 
 def store_video(from_frame,to_frame,vid,out):
+  global fps
+  global person_detected_in_past
+  global person_detected_in_present
+  if (person_detected_in_past != person_detected_in_present):
+    curr_frame = from_frame - fps
+    if curr_frame < 0:
+      curr_frame = 0
+  else:
+    curr_frame = from_frame
   prev_frameIndex = vid.get(1)
-  vid.set(1,from_frame)
-  for i in range(from_frame,to_frame):
+  vid.set(1,curr_frame)
+  for i in range(curr_frame,to_frame):
     ret, frame = vid.read()
     if ret == False:
       vid.release()
@@ -108,7 +122,8 @@ def store_video(from_frame,to_frame,vid,out):
       exit(0)
     out.write(frame)
   vid.set(1,prev_frameIndex)
-    
+
+person_detected_in_past = False
 frme = 0
 video_path = sys.argv[1]
 vid = cv2.VideoCapture(video_path)
@@ -123,14 +138,15 @@ fps = int(round(vid.get(cv2.CAP_PROP_FPS)))
 out = cv2.VideoWriter(dest_video_path, cv2.VideoWriter_fourcc('M','J','P','G'), fps, (frame_width,frame_height))
 try:
   while True:
-    print("========================================================")
-    res = is_person_detected(detection_model, frme, vid, out, fps)
-    if res == False:
+    person_detected_in_present = is_person_detected(detection_model, frme, vid, out, fps)
+    if person_detected_in_present == False:
       frme = frme + fps
+      person_detected_in_past = False
       print("ff 1sec")
       continue
-    print("Person detected:",res)
+    print("Person detected:", person_detected_in_present)
     store_video(frme, frme + (fps*5), vid, out)
+    person_detected_in_past = person_detected_in_present
     frme = frme + (fps*5)
     print("ff 5secs")
 except KeyboardInterrupt:

@@ -70,15 +70,15 @@ def is_person_detected(model,start_frame,vid,fps):
     for j in range(0,len(output_dict['detection_classes'])):
       #print(output_dict['detection_classes'][j],output_dict['detection_scores'][j])
       if output_dict['detection_classes'][j] == 1 and output_dict['detection_scores'][j] > 0.4:
-        print("Person detection score:",output_dict['detection_scores'][j])
+        print("Person detection score in frame",i,':',output_dict['detection_scores'][j])
         person_in_frame = person_in_frame + 1
         break
     #print('<<<-------------------FRAME_END------------------->>>')
     if int(math.ceil(fps*0.1)) < person_in_frame:
       break
-  print("person_in_frame:",person_in_frame)
+  print("person_in_frame count:",person_in_frame)
   if int(math.ceil(fps*0.1)) < person_in_frame:
-    print("Person detected!!!")
+    #print("Person detected!!!")
     return True
   return False
 
@@ -104,7 +104,7 @@ dest_video_path = sys.argv[2]
 print(dest_video_path)
 frame_width = int(vid.get(3))
 frame_height = int(vid.get(4))
-fps = int(vid.get(cv2.CAP_PROP_FPS))
+fps = int(round(vid.get(cv2.CAP_PROP_FPS)))
 out = cv2.VideoWriter(dest_video_path, cv2.VideoWriter_fourcc('M','J','P','G'), fps, (frame_width,frame_height))
 while True:
   #print("========================================================")
